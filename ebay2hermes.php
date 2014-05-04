@@ -1,11 +1,22 @@
 <?php
+
+
+	$params = getopt('f:');
+
+	if (!count($params)) {
+		$pathInfo = pathinfo(__FILE__);
+		echo 'Please provide a file by calling this script like "php ' . $pathInfo['basename'] . ' -f yourfile.csv"' . PHP_EOL;
+		die();
+	}
+
+
 	/* Main */
 
 	/* Defaults parcel contents category */
 	// TODO: make this user-specified?
 	$contents = 'Home & Garden';
 
-	$inputFile = 'ebay_sanitised.csv';
+	$inputFile = $params['f'];
 	$outputFile = 'hermes_' . date('y_m_d') . '.csv';
 
 	/* Initial ebay csv data */
