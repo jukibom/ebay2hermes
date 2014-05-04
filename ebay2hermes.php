@@ -381,28 +381,39 @@
 	 *  @return float weight value
 	 */
 	function getUserWeight() {
-		$handle = fopen ('php://stdin', 'r');
-		$line = fgets($handle);
-		$line = trim($line, "\r\n");
-		if (is_numeric($line)){
-			if ($line > 15) {
-				echo colorize('This is more than myHermes allows! Please try again:', 'FAILURE') . '  ';
-				return getUserWeight();
+		$handle = fopen('php://stdin', 'r');
+
+		$weight = 0;
+
+		while (0 == $weight) {
+			$line = fgets($handle);
+			$line = trim($line, "\r\n");
+
+			// Validate user-provided function, defaulting to the value from getUserWeight() when invalid.
+			switch (true) {
+				case !is_numeric($line):
+					echo colorize('Invalid weight, please try again:', 'FAILURE') . '  ';
+					break;
+
+				case $line > 15:
+					echo colorize('This is more than myHermes allows! Please try again:', 'FAILURE') . '  ';
+					break;
+
+				case $line == 0:
+					echo colorize('There is no such thing is weightless. Sorry. Try again:', 'FAILURE') . '  ';
+					break;
+
+				case $line < 0:
+					echo colorize('Inverse weight is a fantasy. Stop it. Try again:', 'FAILURE') . '  ';
+					break;
+
+				default:
+					$weight = $line * 0.99;	// By default reduce slightly to drop below parcel cost threshold (10Kg = 9.9 Kg = 5-10Kg parcel)
+					break;
 			}
-			if ($line == 0) {
-				echo colorize('There is no such thing is weightless. Sorry. Try again:', 'FAILURE') . '  ';
-				return getUserWeight();
-			}
-			if ($line < 0) {
-				echo colorize('Inverse weight is a fantasy. Stop it. Try again:', 'FAILURE') . '  ';
-				return getUserWeight();
-			}
-			return $line * 0.99;	// reduce slightly to drop below parcel cost threshold (10Kg = 9.9 Kg = 5-10Kg parcel)
-		} else {
-			// if the user inputs an invalid weight, default and notify again at the end!
-			echo colorize('Invalid weight, please try again:', 'FAILURE') . '  ';
-			return getUserWeight();
 		}
+
+		return $weight;
 	}
 
 
