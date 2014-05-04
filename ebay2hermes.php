@@ -28,13 +28,13 @@
 	/** Process functions **/
 
 	/** Populate an array with Ebay CSV values and return it
-	 *  @param $file filesystem location of CSV file to load
-	 *  @return multidimensional incrementing array of orders
+	 *  @param string $filePath filesystem location of CSV file to load
+	 *  @return array Multidimensional, incrementing array of orders
 	 */
-	function loadEbayCSV($file) {
+	function loadEbayCSV($filePath) {
 
 		$CSVArray = Array();
-		$file = fopen($file, "r");
+        $file = fopen($filePath, "r");
 
 		if ($file) {
 			$i = 0;
