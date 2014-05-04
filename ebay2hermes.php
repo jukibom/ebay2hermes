@@ -28,9 +28,12 @@
 
 	/** Process functions **/
 
-	/** Populate an array with Ebay CSV values and return it
-	 *  @param string $filePath filesystem location of CSV file to load
-	 *  @return array Multidimensional, incrementing array of orders
+	/**
+	 * Populate an array with Ebay CSV values and return it
+	 *
+	 * @param string $filePath filesystem location of CSV file to load
+	 *
+	 * @return array Multidimensional, incrementing array of orders
 	 */
 	function loadEbayCSV($filePath) {
 
@@ -97,16 +100,18 @@
 		return $CSVArray;
 	}
 
-	/** Copies customer details from multi-order headers into the individual orders
-	 *  and removes the header from the array. This is so multi-orders can be packaged
-	 *  in separate parcels if required and will be treated like any other.
-	 *  format:
-	 *  (Header)	id		username	name	phone	email	addr1	addr2	addr3	addr4	postcode	country		empty		empty
-	 *	(order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
-	 *	(order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
+	/**
+	 * Copies customer details from multi-order headers into the individual orders
+	 * and removes the header from the array. This is so multi-orders can be packaged
+	 * in separate parcels if required and will be treated like any other.
+	 * format:
+	 * (Header)	id		username	name	phone	email	addr1	addr2	addr3	addr4	postcode	country		empty		empty
+	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
+	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 *
-	 *	@param array $CSVArray ebay formatted array
-	 *  @return array ebay formatted array sans headers with customer details copied into individual orders
+	 * @param array $CSVArray ebay formatted array
+	 *
+	 * @return array ebay formatted array sans headers with customer details copied into individual orders
 	 */
 	function normalizeEbayMultiOrders($CSVArray) {
 
@@ -151,11 +156,14 @@
 		return $cleanCSVArray;
 	}
 
-	/** Prompts the user as to whether or not to combine ALL (>1) orders with the same name.
-	  * Also combines references so it's clear to the user which orders are to go in one parcel.
-	  * @param array $ebayArray clear array before after multi-purchase headers have been removed
-	  * @return array ebayArray with any duplicates removed
-	  */
+	/**
+	 * Prompts the user as to whether or not to combine ALL (>1) orders with the same name.
+	 * Also combines references so it's clear to the user which orders are to go in one parcel.
+	 *
+	 * @param array $ebayArray clear array before after multi-purchase headers have been removed
+	 *
+	 * @return array ebayArray with any duplicates removed
+	 */
 	function promptForDuplicates($ebayArray) {
 
 		$cleanEbayArray				= array();
@@ -197,12 +205,15 @@
 		return $cleanEbayArray;
 	}
 
-	/** Requests user input and constructs a hermes array ready for outputting
-	  *	@param $ebayArray a complete, de-duplicated clean ebay order array
-	  * @param $contents the default contents string for myHermes
-	  * @param $specifyWeight whether or not to request input on weights
-	  * @return completed myHermes array ready for outputting to CSV.
-	  */
+	/**
+	 * Requests user input and constructs a hermes array ready for outputting
+	 *
+	 * @param array $ebayArray a complete, de-duplicated clean ebay order array
+	 * @param string $contents the default contents string for myHermes
+  	 * @param boolean $specifyWeight whether or not to request input on weights
+	 *
+	 * @return array completed myHermes array ready for outputting to CSV.
+	 */
 	function convertEbayToHermes($ebayArray, $contents, $specifyWeight) {
 
 		$hermesArray = array();
@@ -227,16 +238,19 @@
 		return $hermesArray;
 	}
 
-	/** Returns an array of all duplicate orders with the keys identical to the original array.
-	  * @param $currentOrder the order array to look up
-	  * @param $orders the full ebayArray with no multi-headers
-	  * @param $ignoreList an array of orders to skip (if a user already said not to combine)
-	  * @return array of duplicate orders
-	  */
-	function getDuplicates($currentOrder, $orders, $ignoreList) {
+	/**
+	 * Returns an array of all duplicate orders with the keys identical to the original array.
+	 *
+	 * @param array $currentOrder the order array to look up
+	 * @param array $orderList the full ebayArray with no multi-headers
+	 * @param array $ignoreList an array of orders to skip (if a user already said not to combine)
+	 *
+	 * @return array of duplicate orders
+	 */
+	function getDuplicates($currentOrder, $orderList, $ignoreList) {
 		$duplicates = array();
 		$references = array();
-		foreach ($orders as $key => $order) {
+		foreach ($orderList as $key => $order) {
 
 			// Skip ignores
 			if (false !== array_search($currentOrder, $ignoreList)) {
@@ -259,10 +273,12 @@
 		return array($duplicates, $refs);
 	}
 
-	/** Exports a myHermes compatible CSV file.
-	  * @param string $outputFile the filesystem location to output to
-	  * @param string[] $hermesArray a converted array to output
-	  */
+	/**
+	 * Exports a myHermes compatible CSV file.
+	 *
+	 * @param string $outputFile the filesystem location to output to
+	 * @param string[] $hermesArray a converted array to output
+	 */
 	function outputHermes($outputFile, array $hermesArray) {
 		echo 'Exporting header to ' . $outputFile . '...' . PHP_EOL;
 
@@ -342,6 +358,7 @@
 	 * Encode a CSV line, forcing all values to be quoted.
 	 *
 	 * @param array $csvLine
+	 *
 	 * @return string
 	 */
 	function encodeCsvLine(array $csvLine)
@@ -359,8 +376,10 @@
 
 	/** HELPER FUNCTIONS **/
 
-	/** Asks the user whether or not they wish to manually specify weights with parcels
-	 *  @return boolean yes/no response
+	/**
+	 * Asks the user whether or not they wish to manually specify weights with parcels
+	 *
+	 * @return boolean yes/no response
 	 */
 	function getUserWeightPref() {
 		echo PHP_EOL . 'Weights of each order default to <1Kg.' . PHP_EOL . 'Would you prefer to specify weights for each order? (y/n)' . PHP_EOL;
@@ -374,10 +393,14 @@
 	}
 
 
-	/** Get user input for weight of an order
-	 *  Reduces the weight by 0.01% in order to drop below threshold for parcel weights
-	 *  Maximum weight input of 15Kg
-	 *  @return float weight value
+	/**
+	 * Get user input for weight of an order
+	 *
+	 * Reduces the weight by 0.01% in order to drop below threshold for parcel weights
+	 *
+	 * Maximum weight input of 15Kg
+	 *
+	 * @return float weight value
 	 */
 	function getUserWeight() {
 		$handle = fopen('php://stdin', 'r');
@@ -416,9 +439,12 @@
 	}
 
 
-	/** Simple get true or false based on user input of "y/yes" or "n/no"
-	 *  Basic error handling included
-	 *  @return boolean yes/no answer
+	/**
+	 * Simple get true or false based on user input of "y/yes" or "n/no"
+	 *
+	 * Basic error handling included
+	 *
+	 * @return boolean True if the user said yes, false if no.
 	 */
 	function promptUserConfirmation() {
 		$handle = fopen ('php://stdin', 'r');
@@ -450,28 +476,30 @@
 	}
 
 
-	/** Completion of a task with small usability pause
-	  * Simply outputs "Done" in green text and waits 125 mSec
-	  * (Prevents user from seeing an instant giant wall of text!)
-	  */
+	/**
+	 * Completion of a task with small usability pause
+	 * Simply outputs "Done" in green text and waits 125 mSec
+	 * (Prevents user from seeing an instant giant wall of text!)
+	 */
 	function complete() {
 		usleep(125000);
 		echo colorize('Done!', 'SUCCESS') . PHP_EOL;
 	}
 
 
-	/** Handy coloring helper function
+	/**
+	 * Handy coloring helper function
 	 *
 	 * @throws Exception If an invalid status is passed in.
 	 *
-	 *  @param string $text input text to be colored
-	 *  @param string $status determines color:
+	 * @param string $text input text to be colored
+	 * @param string $status determines color:
 	 *		'SUCCESS' 	= green
 	 *		'FAILURE' 	= red
 	 *		'WARNING' 	= yellow
 	 *		'NOTE'		= blue
 	 *
-	 *  @return string colored text string
+	 * @return string colored text string
 	 */
 	function colorize($text, $status) {
 
