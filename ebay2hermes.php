@@ -18,6 +18,7 @@
 
 	/** 'MAIN' **/
 	$ebayArray = loadEbayCSV($inputFile);
+	$ebayArray = normalizeEbayMultiOrders($ebayArray);
 	$ebayArray = promptForDuplicates($ebayArray);
 	$specifyWeight = getUserWeightPref();		// whether or not to manually specify weights for each order
 	$hermesArray = convertEbayToHermes($ebayArray, $contents, $specifyWeight);
@@ -33,48 +34,67 @@
 	 */
 	function loadEbayCSV($filePath) {
 
-		$CSVArray = Array();
-        $file = fopen($filePath, "r");
+		try {
+			$file = new \SplFileObject($filePath, 'r');
+		} catch(\RuntimeException $e) {
+			echo 'CSV could not be opened - please check file path' . PHP_EOL;
+			die();
+		}
+		$file->setFlags(SplFileObject::DROP_NEW_LINE | SplFileObject::SKIP_EMPTY);
 
-		if ($file) {
-			$i = 0;
-			while (($line = fgets($file)) !== false) {
-				$lineArray = str_getcsv($line);
+
+		$CSVArray = Array();
+		while (!$file->eof()) {
+			$lineArray = $file->fgetcsv();
+
+			$orderNo = $lineArray[0];
+
+			// TODO: Correctly handle odd trailing line - look at flags :/
+			if (!strlen($orderNo)) {
+				continue;
+			}
+
+			if (!array_key_exists($orderNo, $CSVArray)) {
+				$CSVArray[$orderNo] = array();
+			}
+
+			$name = explode(" ", $lineArray[2]);
+
+			// multi-purchase order headers have no product ID associated with them
+			$multiPurchase = false;
+			if(empty($lineArray[11])) {
+				$multiPurchase = true;
+			}
+
+			$CSVArray[$orderNo][] = array(
+				'multiPurchaseHeader' => $multiPurchase,
 
 				// customer name (split into [all first names] [last name])
-				$name = explode(" ", $lineArray[2]);
-
-				$CSVArray[$i]['lastname']	= array_pop($name);
-				$CSVArray[$i]['firstnames'] = implode(" ", $name);
+				'lastname' => array_pop($name),
+				'firstnames' => implode(" ", $name),
 
 				// customer address
-				$CSVArray[$i]['address1'] = $lineArray[5];
-				$CSVArray[$i]['address2'] = $lineArray[6];
-				$CSVArray[$i]['address3'] = $lineArray[7];
-				$CSVArray[$i]['address4'] = $lineArray[8];
-				$CSVArray[$i]['postcode'] = $lineArray[9];
+				'address1' => $lineArray[5],
+				'address2' => $lineArray[6],
+				'address3' => $lineArray[7],
+				'address4' => $lineArray[8],
+				'postcode' => $lineArray[9],
 
 				// customer email
-				$CSVArray[$i]['email'] = $lineArray[4];
+				'email' => $lineArray[4],
 
 				// customer phone number
-				$CSVArray[$i]['phone'] = $lineArray[3];
+				'phone' => $lineArray[3],
 
 				// reference - use order number (product name surprisingly useless with print character limit)
-				$CSVArray[$i]['reference'] = $lineArray[0];
+				'reference' => $lineArray[0],
 
 				// product cost
-				$CSVArray[$i]['value'] = $lineArray[15];
-
-				// multi-purchase order headers have no product ID associated with them
-				$CSVArray[$i]['multiPurchaseHeader'] = false;
-				if(empty($lineArray[11])) {
-					$CSVArray[$i]['multiPurchaseHeader'] = true;
-				}
-				$i ++;
-			}
-			return PurgeEbayMultiOrders($CSVArray);
+				'value' => $lineArray[15]
+			);
 		}
+
+		return $CSVArray;
 	}
 
 	/** Copies customer details from multi-order headers into the individual orders
@@ -85,51 +105,56 @@
 	 *	(order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 *	(order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 *
-	 *	@param CSVArray ebay formatted array
-	 *  @return ebay formatted array sans headers with customer details copied into individual orders
+	 *	@param array $CSVArray ebay formatted array
+	 *  @return array ebay formatted array sans headers with customer details copied into individual orders
 	 */
-	function PurgeEbayMultiOrders($CSVArray) {
+	function normalizeEbayMultiOrders($CSVArray) {
 
 		// remove multi-purchase headers and copy name / address into individual orders
-		foreach($CSVArray as $key => $order) {
-			if($order['multiPurchaseHeader'] == true) {
+		$cleanCSVArray = array();
+		foreach($CSVArray as $orderNo => $orderList) {
 
-				// store original header reference
-				$headerRef = $order['reference'];
+			if (count($orderList) > 1) {
 
-				// find other orders by reference (ebay Order number)
-				foreach($CSVArray as $searchKey => $searchOrder) {
+				$headerRow = array();   // Stop IDE nag for uninitialized variable
+				foreach ($orderList as $order) {
 
-					// copy missing information into related orders
-					if($searchOrder['reference'] == $order['reference'] && $searchOrder['multiPurchaseHeader'] == false) {
-						$CSVArray[$searchKey]['firstnames'] = $order['firstnames'];
-						$CSVArray[$searchKey]['lastname'] 	= $order['lastname'];
-						$CSVArray[$searchKey]['address1'] 	= $order['address1'];
-						$CSVArray[$searchKey]['address2'] 	= $order['address2'];
-						$CSVArray[$searchKey]['address3'] 	= $order['address3'];
-						$CSVArray[$searchKey]['address4'] 	= $order['address4'];
-						$CSVArray[$searchKey]['postcode'] 	= $order['postcode'];
-						$CSVArray[$searchKey]['email'] 		= $order['email'];
-						$CSVArray[$searchKey]['phone'] 		= $order['phone'];
+					// Header is always the first row
+					if ($order['multiPurchaseHeader']) {
+						$headerRow = $order;
 
+					// Subsequent rows
+					} else {
 						// restore original references (different in CSV to sales page!)
-						$headerRef --;
-						$CSVArray[$searchKey]['reference']  = $headerRef;
+						$orderNo--;
+
+						$order['firstnames']	= $headerRow['firstnames'];
+						$order['lastname']		= $headerRow['lastname'];
+						$order['address1']		= $headerRow['address1'];
+						$order['address2']		= $headerRow['address2'];
+						$order['address3']		= $headerRow['address3'];
+						$order['address4']		= $headerRow['address4'];
+						$order['postcode']		= $headerRow['postcode'];
+						$order['email']			= $headerRow['email'];
+						$order['phone']			= $headerRow['phone'];
+						$order['reference']		= $orderNo;
+
+						$cleanCSVArray[]		= $order;
 					}
 				}
-				//remove header element
-				unset($CSVArray[$key]);
+
+			} else {
+				$cleanCSVArray[] = $orderList[0];
 			}
-			//re-index array incase any elements were removed
-			$CSVArray = array_values($CSVArray);
 		}
-		return $CSVArray;
+
+		return $cleanCSVArray;
 	}
 
 	/** Prompts the user as to whether or not to combine ALL (>1) orders with the same name.
 	  * Also combines references so it's clear to the user which orders are to go in one parcel.
-	  * @param ebayArray clear array before after multi-purchase headers have been removed
-	  * @return ebayArray with any duplicates removed
+	  * @param array $ebayArray clear array before after multi-purchase headers have been removed
+	  * @return array ebayArray with any duplicates removed
 	  */
 	function promptForDuplicates($ebayArray) {
 		$ignoreList = array();
