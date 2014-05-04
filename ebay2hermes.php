@@ -174,7 +174,7 @@
 				echo PHP_EOL . PHP_EOL . colorize($order['firstnames'] . ' ' . $order['lastname'] . ' has placed multiple orders. ('. $serializedReferences . ')', 'NOTE');
 				echo PHP_EOL . 'Do you wish to combine these orders and send in one parcel? (y/n):  ';
 
-				if (getUserYesNo()) {
+				if (promptUserConfirmation()) {
 					// if yes, trim others and replace reference of first order with combined
 					foreach ($duplicateArray as $mergeKey => $merge) {
 						if ($key == $mergeKey) {
@@ -365,7 +365,7 @@
 	function getUserWeightPref() {
 		echo PHP_EOL . 'Weights of each order default to <1Kg.' . PHP_EOL . 'Would you prefer to specify weights for each order? (y/n)' . PHP_EOL;
 
-		if (getUserYesNo()) {
+		if (promptUserConfirmation()) {
 			echo PHP_EOL . colorize('Please keep in mind that weights will be reduced slightly to drop below cost threshold.', 'NOTE') . PHP_EOL . PHP_EOL;
 			return true;
 		}
@@ -420,17 +420,33 @@
 	 *  Basic error handling included
 	 *  @return boolean yes/no answer
 	 */
-	function getUserYesNo() {
+	function promptUserConfirmation() {
 		$handle = fopen ('php://stdin', 'r');
-		$line = fgets($handle);
-		$line = trim($line, "\r\n");
-		if ($line == 'y' || $line == 'yes') {
-			return true;
-		} elseif ($line != 'n' && $line != 'no') {
-			echo colorize('Invalid input, please try again (y/n):', 'FAILURE') . '  ';
-			return getUserYesNo();
+
+		$selection = null;
+
+		while (is_null($selection)) {
+			$line = fgets($handle);
+			$line = trim($line, "\r\n");
+
+			switch (true) {
+				case $line == 'y':
+				case $line == 'yes':
+					$selection = 'yes';
+					break;
+
+				case $line == 'n':
+				case $line == 'no':
+					$selection = 'no';
+					break;
+
+				default:
+					echo colorize('Invalid input, please try again (y/n):', 'FAILURE') . '  ';
+					break;
+			}
 		}
-		return false;
+
+		return 'yes' == $selection;
 	}
 
 
