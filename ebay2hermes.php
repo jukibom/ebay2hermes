@@ -10,21 +10,14 @@
 	}
 
 
-	/* Main */
+	// Configuration options
+	$defaultCategory = 'Home & Garden';
+	$defaultWeight	= 0.5;
+	$uxWait	= 125000;			// Number of microsecond to delay processing by (oddly more user-friendly)
 
-	/* Defaults parcel contents category */
-	// TODO: make this user-specified?
-	$contents = 'Home & Garden';
 
 	$inputFile = $params['f'];
 	$outputFile = 'hermes_' . date('y_m_d') . '.csv';
-
-	/* Initial ebay csv data */
-	$ebayArray = array();
-
-	/* Re-arranged myHermes csv data */
-	$hermesArray = array();
-
 
 
 	/** 'MAIN' **/
@@ -32,8 +25,8 @@
 	$ebayArray = normalizeEbayMultiOrders($ebayArray);
 	$ebayArray = promptForDuplicates($ebayArray);
 	$specifyWeight = getUserWeightPref();		// whether or not to manually specify weights for each order
-	$hermesArray = convertEbayToHermes($ebayArray, $contents, $specifyWeight);
-	outputHermes($outputFile, $hermesArray);
+	$hermesArray = convertEbayToHermes($ebayArray, $defaultCategory, $specifyWeight, $defaultWeight);
+	outputHermes($outputFile, $hermesArray, $uxWait);
 
 
 
@@ -288,12 +281,11 @@
 	 * @param array $ebayArray a complete, de-duplicated clean ebay order array
 	 * @param string $contents the default contents string for myHermes
   	 * @param boolean $specifyWeight whether or not to request input on weights
+	 * @param float $defaultWeight the default weight to use if not specifying per-package.
 	 *
 	 * @return array completed myHermes array ready for outputting to CSV.
 	 */
-	function convertEbayToHermes($ebayArray, $contents, $specifyWeight) {
-
-		$defaultWeight = 0.5;
+	function convertEbayToHermes($ebayArray, $contents, $specifyWeight, $defaultWeight) {
 
 		$hermesArray = array();
 		foreach($ebayArray as $key => $order) {
@@ -358,8 +350,9 @@
 	 *
 	 * @param string $outputFile the filesystem location to output to
 	 * @param string[] $hermesArray a converted array to output
+	 * @param int $uxWait Number of microseconds to delay the process by.
 	 */
-	function outputHermes($outputFile, array $hermesArray) {
+	function outputHermes($outputFile, array $hermesArray, $uxWait) {
 		echo 'Exporting header to ' . $outputFile . '...' . PHP_EOL;
 
 		// Set headers, used also in automagically processing heremes array
@@ -403,9 +396,9 @@
 
 		$file->fflush();
 
-		usleep(500000);
+		usleep($uxWait);
 		echo PHP_EOL . 'Exported ' . $recordNum . ' records to ' . $outputFile . '...' . PHP_EOL . PHP_EOL;
-		usleep(250000);
+		usleep($uxWait);
 	}
 
 
@@ -562,7 +555,8 @@
 	 * (Prevents user from seeing an instant giant wall of text!)
 	 */
 	function complete() {
-		usleep(125000);
+		global $uxWait;	// Sue me, don't want to pass this in everywhere.
+		usleep($uxWait);
 		echo colorize('Done!', 'SUCCESS') . PHP_EOL;
 	}
 
