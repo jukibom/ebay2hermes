@@ -157,34 +157,45 @@
 	  * @return array ebayArray with any duplicates removed
 	  */
 	function promptForDuplicates($ebayArray) {
-		$ignoreList = array();
 
-		foreach($ebayArray as $key => $order) {
+		$cleanEbayArray				= array();
+		$aggregateDuplicateArray	= array();
+		$previouslyProcessedArray	= array();
+		foreach ($ebayArray as $key => $order) {
 
-			list($duplicates, $references) = getDuplicates($order, $ebayArray, $ignoreList);
-			if (!empty($duplicates)) {
+			// Skip previously processed order
+			if (array_key_exists($key, $previouslyProcessedArray)) {
+				continue;
+			}
 
-				echo("\n\n" . colorize($order['firstnames'] . " " . $order['lastname'] . " has placed multiple orders. (". $references . ")", "NOTE"));
+			list($duplicateArray, $serializedReferences) = getDuplicates($order, $ebayArray, $aggregateDuplicateArray);
+			if (count($duplicateArray)) {
+
+				echo("\n\n" . colorize($order['firstnames'] . " " . $order['lastname'] . " has placed multiple orders. (". $serializedReferences . ")", "NOTE"));
 				echo("\nDo you wish to combine these orders and send in one parcel? (y/n):  ");
 
-				if(getUserYesNo()) {
+				if (getUserYesNo()) {
 					// if yes, trim others and replace reference of first order with combined
-					$ebayArray[$key]['reference'] = $references;
-					foreach($duplicates as $mergeKey => $merge) {
-						if($key == $mergeKey) {
-							continue;
+					foreach ($duplicateArray as $mergeKey => $merge) {
+						if ($key == $mergeKey) {
+							$order['reference']	= $serializedReferences;
+							$cleanEbayArray[] = $order;
 						}
-						unset($ebayArray[$mergeKey]);
+						$previouslyProcessedArray[$mergeKey] = true;
 					}
 
 				}
 				else {
 					// if no, continue as normal but don't ask again.
-					$ignoreList = array_merge($ignoreList, $duplicates);
+					$aggregateDuplicateArray = array_merge($aggregateDuplicateArray, $duplicateArray);
+					$cleanEbayArray[] = $order;
 				}
+			} else {
+				$cleanEbayArray[] = $order;
 			}
 		}
-		return $ebayArray;
+
+		return $cleanEbayArray;
 	}
 
 	/** Requests user input and constructs a hermes array ready for outputting
@@ -226,17 +237,19 @@
 	  * @return array of duplicate orders
 	  */
 	function getDuplicates($currentOrder, $orders, $ignoreList) {
-		$refs = array();
 		$duplicates = array();
 		$references = array();
 		foreach ($orders as $key => $order) {
-			if (array_search($currentOrder, $ignoreList)) {
+
+			// Skip ignores
+			if (false !== array_search($currentOrder, $ignoreList)) {
 				continue;
 			}
-			if (array_search($currentOrder['firstnames'], $order) && array_search($currentOrder['lastname'], $order)) {
+
+			if ($currentOrder['firstnames'] == $order['firstnames'] && $currentOrder['lastname'] == $order['lastname']) {
 				// maintain consistent keys across arrays
-				$duplicates[$key] = $order;
-				array_push($references, $order['reference']);
+				$duplicates[$key]	= $order;
+				$references[]		= $order['reference'];
 			}
 		}
 		$refs = implode(', ', $references);
@@ -245,6 +258,7 @@
 		if (count($duplicates) == 1) {
 			$duplicates = array();
 		}
+
 		return array($duplicates, $refs);
 	}
 
