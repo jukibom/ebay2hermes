@@ -20,4 +20,4 @@ To use:
   * Place file in same folder as this script
   * run 'php ebay2hermes.php -f yourfilename.csv'
 
-NOT TESTED ON WINDOWS.
+Works fine on windows except for artifacts before and after colored terminal text. I'll look into it.
