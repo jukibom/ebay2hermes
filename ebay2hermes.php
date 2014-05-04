@@ -161,7 +161,7 @@
 
 		foreach($ebayArray as $key => $order) {
 
-			$duplicates = getDuplicates($order, $ebayArray, $ignoreList, $references);
+			list($duplicates, $references) = getDuplicates($order, $ebayArray, $ignoreList);
 			if (!empty($duplicates)) {
 
 				echo("\n\n" . colorize($order['firstnames'] . " " . $order['lastname'] . " has placed multiple orders. (". $references . ")", "NOTE"));
@@ -223,10 +223,10 @@
 	  * @param $currentOrder the order array to look up
 	  * @param $orders the full ebayArray with no multi-headers
 	  * @param $ignoreList an array of orders to skip (if a user already said not to combine)
-	  * @param &$refs fills a string by reference of all the combined order references
 	  * @return array of duplicate orders
 	  */
-	function getDuplicates($currentOrder, $orders, $ignoreList, &$refs) {
+	function getDuplicates($currentOrder, $orders, $ignoreList) {
+		$refs = array();
 		$duplicates = array();
 		$references = array();
 		foreach ($orders as $key => $order) {
@@ -242,10 +242,10 @@
 		$refs = implode(', ', $references);
 
 		// if only one match, clear array (but we want to include the original if there is!)
-		if(count($duplicates) == 1) {
+		if (count($duplicates) == 1) {
 			$duplicates = array();
 		}
-		return $duplicates;
+		return array($duplicates, $refs);
 	}
 
 	/** Exports a myHermes compatible CSV file.
