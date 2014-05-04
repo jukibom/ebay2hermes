@@ -13,11 +13,11 @@ This script:
   * Uses eBay order reference number(s) to be printed on the label. 
   * Processes orders in the same order as the eBay sales page or printed manifest (no more ordering by postcode!)
   * Handles splitting of names into forename(s) / surname.
+  * Handles ebay CSV sanitising
   
 To use:
   * Download your sales data from eBay
   * Place file in same folder as this script
-  * Rename the file "ebay_sanitised.csv" (we have to sanitise our files first as eBay does not escape " characters correctly - you will likely have no problem with this unless you have " characters in any of your auction titles)
-  * run 'php ebay2hermes.php'
+  * run 'php ebay2hermes.php -f yourfilename.csv'
 
 NOT TESTED ON WINDOWS.
