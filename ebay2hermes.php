@@ -1,5 +1,5 @@
 <?php
-	/* Main */	
+	/* Main */
 
 	/* Defaults parcel contents category */
 	// TODO: make this user-specified?
@@ -10,10 +10,10 @@
 
 	/* Initial ebay csv data */
 	$ebayArray = array();
-	
-	/* Re-arranged myHermes csv data */ 
+
+	/* Re-arranged myHermes csv data */
 	$hermesArray = array();
-	
+
 
 
 	/** 'MAIN' **/
@@ -22,14 +22,14 @@
 	$specifyWeight = getUserWeightPref();		// whether or not to manually specify weights for each order
 	$hermesArray = convertEbayToHermes($ebayArray, $contents, $specifyWeight);
 	outputHermes($outputFile, $hermesArray);
-	
+
 
 
 	/** Process functions **/
 
-	/** Populate an array with Ebay CSV values and return it 
+	/** Populate an array with Ebay CSV values and return it
 	 *  @param $file filesystem location of CSV file to load
-	 *  @return multidimensional incrementing array of orders 
+	 *  @return multidimensional incrementing array of orders
 	 */
 	function loadEbayCSV($file) {
 
@@ -40,13 +40,13 @@
 			$i = 0;
 			while (($line = fgets($file)) !== false) {
 				$lineArray = str_getcsv($line);
-				
+
 				// customer name (split into [all first names] [last name])
 				$name = explode(" ", $lineArray[2]);
 
 				$CSVArray[$i]['lastname']	= array_pop($name);
 				$CSVArray[$i]['firstnames'] = implode(" ", $name);
-	
+
 				// customer address
 				$CSVArray[$i]['address1'] = $lineArray[5];
 				$CSVArray[$i]['address2'] = $lineArray[6];
@@ -77,7 +77,7 @@
 		}
 	}
 
-	/** Copies customer details from multi-order headers into the individual orders 
+	/** Copies customer details from multi-order headers into the individual orders
 	 *  and removes the header from the array. This is so multi-orders can be packaged
 	 *  in separate parcels if required and will be treated like any other.
 	 *  format:
@@ -93,11 +93,11 @@
 		// remove multi-purchase headers and copy name / address into individual orders
 		foreach($CSVArray as $key => $order) {
 			if($order['multiPurchaseHeader'] == true) {
-				
-				// store original header reference				
+
+				// store original header reference
 				$headerRef = $order['reference'];
 
-				// find other orders by reference (ebay Order number)			
+				// find other orders by reference (ebay Order number)
 				foreach($CSVArray as $searchKey => $searchOrder) {
 
 					// copy missing information into related orders
@@ -111,7 +111,7 @@
 						$CSVArray[$searchKey]['postcode'] 	= $order['postcode'];
 						$CSVArray[$searchKey]['email'] 		= $order['email'];
 						$CSVArray[$searchKey]['phone'] 		= $order['phone'];
-						
+
 						// restore original references (different in CSV to sales page!)
 						$headerRef --;
 						$CSVArray[$searchKey]['reference']  = $headerRef;
@@ -128,14 +128,14 @@
 
 	/** Prompts the user as to whether or not to combine ALL (>1) orders with the same name.
 	  * Also combines references so it's clear to the user which orders are to go in one parcel.
-	  * @param ebayArray clear array before after multi-purchase headers have been removed 
+	  * @param ebayArray clear array before after multi-purchase headers have been removed
 	  * @return ebayArray with any duplicates removed
 	  */
 	function promptForDuplicates($ebayArray) {
 		$ignoreList = array();
 
 		foreach($ebayArray as $key => $order) {
-			
+
 			$duplicates = getDuplicates($order, $ebayArray, $ignoreList, $references);
 			if (!empty($duplicates)) {
 
@@ -162,7 +162,7 @@
 		return $ebayArray;
 	}
 
-	/** Requests user input and constructs a hermes array ready for outputting 
+	/** Requests user input and constructs a hermes array ready for outputting
 	  *	@param $ebayArray a complete, de-duplicated clean ebay order array
 	  * @param $contents the default contents string for myHermes
 	  * @param $specifyWeight whether or not to request input on weights
@@ -175,7 +175,7 @@
 
 			$hermesArray[$key] = $order;
 
-			// contents (currently static) 
+			// contents (currently static)
 			$hermesArray[$key]['contents'] = $contents;
 
 			// weight (user-specified or default to 0.5)
@@ -186,14 +186,14 @@
 			else {
 				$hermesArray[$key]['weight'] = 0.5;
 			}
-		
-			
+
+
 			complete();
 		}
 		echo("\nImported " . count($hermesArray) . " orders successfully. \n\n");
 		return $hermesArray;
 	}
-	
+
 	/** Returns an array of all duplicate orders with the keys identical to the original array.
 	  * @param $currentOrder the order array to look up
 	  * @param $orders the full ebayArray with no multi-headers
@@ -239,14 +239,14 @@
 		foreach ($hermesArray as $record) {
 			$recordNum ++;
 			echo("Exporting record " . $recordNum . ": " . $record['firstnames'] . " " . $record['lastname'] . "... ");
-			$line  = "\"" . $record['address1'] . "\",";  
-			$line .= "\"" . $record['address2'] . "\",";  
-			$line .= "\"" . $record['address3'] . "\",";  
-			$line .= "\"" . $record['address4'] . "\",";  
-			$line .= "\"" . $record['postcode'] . "\",";  
-			$line .= "\"" . $record['firstnames'] . "\",";  
-			$line .= "\"" . $record['lastname'] . "\",";  
-			$line .= "\"" . $record['email'] . "\",";  
+			$line  = "\"" . $record['address1'] . "\",";
+			$line .= "\"" . $record['address2'] . "\",";
+			$line .= "\"" . $record['address3'] . "\",";
+			$line .= "\"" . $record['address4'] . "\",";
+			$line .= "\"" . $record['postcode'] . "\",";
+			$line .= "\"" . $record['firstnames'] . "\",";
+			$line .= "\"" . $record['lastname'] . "\",";
+			$line .= "\"" . $record['email'] . "\",";
 			$line .= "\"" . $record['weight'] . "\",";
 			$line .= "\"\",";		// compensation
 			$line .= "\"\",";		// signature
@@ -269,8 +269,8 @@
 
 
 	/** HELPER FUNCTIONS **/
-	
-	/** Asks the user whether or not they wish to manually specify weights with parcels 
+
+	/** Asks the user whether or not they wish to manually specify weights with parcels
 	 *  @return boolean yes/no response
 	 */
 	function getUserWeightPref() {
@@ -283,7 +283,7 @@
 	}
 
 
-	/** Get user input for weight of an order 
+	/** Get user input for weight of an order
 	 *  Reduces the weight by 0.01% in order to drop below threshold for parcel weights
 	 *  Maximum weight input of 15Kg
 	 *  @return float weight value
@@ -314,7 +314,7 @@
 		}
 	}
 
-	
+
 	/** Simple get true or false based on user input of "y/yes" or "n/no"
      *  Basic error handling included
 	 *  @return boolean yes/no answer
@@ -344,7 +344,7 @@
 	}
 
 
-	/** Handy coloring helper function 
+	/** Handy coloring helper function
 	 *  @param $text input text to be colored
 	 *  @param $status determines color:
 	 *		'SUCCESS' 	= green
@@ -368,10 +368,10 @@
 		case "NOTE":
 			$out = "[44m"; //Blue background
 			break;
-		default: 
+		default:
 			throw new Exception("Invalid status: " . $status);
 	}
 	return chr(27) . "$out" . "$text" . chr(27) . "[0m";
 }
-		  
+
 ?>
