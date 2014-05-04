@@ -3,10 +3,10 @@
 
 	/* Defaults parcel contents category */
 	// TODO: make this user-specified?
-	$contents = "Home & Garden";
+	$contents = 'Home & Garden';
 
-	$inputFile = "ebay_sanitised.csv";
-	$outputFile = "hermes_" . date("y_m_d") . ".csv";
+	$inputFile = 'ebay_sanitised.csv';
+	$outputFile = 'hermes_' . date('y_m_d') . '.csv';
 
 	/* Initial ebay csv data */
 	$ebayArray = array();
@@ -58,7 +58,7 @@
 				$CSVArray[$orderNo] = array();
 			}
 
-			$name = explode(" ", $lineArray[2]);
+			$name = explode(' ', $lineArray[2]);
 
 			// multi-purchase order headers have no product ID associated with them
 			$multiPurchase = false;
@@ -71,7 +71,7 @@
 
 				// customer name (split into [all first names] [last name])
 				'lastname' => array_pop($name),
-				'firstnames' => implode(" ", $name),
+				'firstnames' => implode(' ', $name),
 
 				// customer address
 				'address1' => $lineArray[5],
@@ -171,8 +171,8 @@
 			list($duplicateArray, $serializedReferences) = getDuplicates($order, $ebayArray, $aggregateDuplicateArray);
 			if (count($duplicateArray)) {
 
-				echo("\n\n" . colorize($order['firstnames'] . " " . $order['lastname'] . " has placed multiple orders. (". $serializedReferences . ")", "NOTE"));
-				echo("\nDo you wish to combine these orders and send in one parcel? (y/n):  ");
+				echo PHP_EOL . PHP_EOL . colorize($order['firstnames'] . ' ' . $order['lastname'] . ' has placed multiple orders. ('. $serializedReferences . ')', 'NOTE');
+				echo PHP_EOL . 'Do you wish to combine these orders and send in one parcel? (y/n):  ';
 
 				if (getUserYesNo()) {
 					// if yes, trim others and replace reference of first order with combined
@@ -184,8 +184,7 @@
 						$previouslyProcessedArray[$mergeKey] = true;
 					}
 
-				}
-				else {
+				} else {
 					// if no, continue as normal but don't ask again.
 					$aggregateDuplicateArray = array_merge($aggregateDuplicateArray, $duplicateArray);
 					$cleanEbayArray[] = $order;
@@ -215,18 +214,17 @@
 			$hermesArray[$key]['contents'] = $contents;
 
 			// weight (user-specified or default to 0.5)
-			if($specifyWeight) {
-				echo ("\nPlease enter weight (Kg) for eBay order " . $order['reference'] . " (" . $order['firstnames'] . " " . $order['lastname'] . "):  ");
+			if ($specifyWeight) {
+				echo PHP_EOL . 'Please enter weight (Kg) for eBay order ' . $order['reference'] . ' (' . $order['firstnames'] . ' ' . $order['lastname'] . '):  ';
 				$hermesArray[$key]['weight'] = getUserWeight();
-			}
-			else {
+			} else {
 				$hermesArray[$key]['weight'] = 0.5;
 			}
 
 
 			complete();
 		}
-		echo("\nImported " . count($hermesArray) . " orders successfully. \n\n");
+		echo PHP_EOL . 'Imported ' . count($hermesArray) . ' orders successfully.' . PHP_EOL . PHP_EOL;
 		return $hermesArray;
 	}
 
@@ -269,15 +267,15 @@
 	function outputHermes($outputFile, $hermesArray) {
 		// hermes csv header
 
-		echo("Exporting header to hermes_" . date("y_m_d") . ".csv ...\n");
-		$header = "Address_line_1,Address_line_2,Address_line_3,Address_line_4,Postcode,First_name,Last_name,Email,Weight(Kg),Compensation(£),Signature(y/n),Reference,Contents,Parcel_value(£),Delivery_phone,Delivery_safe_place,Delivery_instructions\n";
+		echo 'Exporting header to ' . $outputFile . '...' . PHP_EOL;
+		$header = 'Address_line_1,Address_line_2,Address_line_3,Address_line_4,Postcode,First_name,Last_name,Email,Weight(Kg),Compensation(£),Signature(y/n),Reference,Contents,Parcel_value(£),Delivery_phone,Delivery_safe_place,Delivery_instructions' . PHP_EOL;
 		file_put_contents($outputFile, $header);
 
 		// records
 		$recordNum = 0;
 		foreach ($hermesArray as $record) {
 			$recordNum ++;
-			echo("Exporting record " . $recordNum . ": " . $record['firstnames'] . " " . $record['lastname'] . "... ");
+			echo "Exporting record " . $recordNum . ": " . $record['firstnames'] . " " . $record['lastname'] . "... ";
 			$line  = "\"" . $record['address1'] . "\",";
 			$line .= "\"" . $record['address2'] . "\",";
 			$line .= "\"" . $record['address3'] . "\",";
@@ -301,7 +299,7 @@
 		}
 
 		usleep(500000);
-		echo("\nExported " . $recordNum . " records to hermes_" . date("y_m_d") . ".csv successfully!\n\n");
+		echo PHP_EOL . 'Exported ' . $recordNum . ' records to ' . $outputFile . '...' . PHP_EOL . PHP_EOL;
 		usleep(250000);
 	}
 
@@ -313,11 +311,13 @@
 	 *  @return boolean yes/no response
 	 */
 	function getUserWeightPref() {
-		echo ("\nWeights of each order default to <1Kg.\nWould you prefer to specify weights for each order? (y/n)\n");
-		if(getUserYesNo()) {
-			echo ("\n" . colorize("Please keep in mind that weights will be reduced slightly to drop below cost threshold.", "NOTE") . "\n\n");
+		echo PHP_EOL . 'Weights of each order default to <1Kg.' . PHP_EOL . 'Would you prefer to specify weights for each order? (y/n)' . PHP_EOL;
+
+		if (getUserYesNo()) {
+			echo PHP_EOL . colorize('Please keep in mind that weights will be reduced slightly to drop below cost threshold.', 'NOTE') . PHP_EOL . PHP_EOL;
 			return true;
 		}
+
 		return false;
 	}
 
@@ -328,27 +328,26 @@
 	 *  @return float weight value
 	 */
 	function getUserWeight() {
-		$handle = fopen ("php://stdin","r");
+		$handle = fopen ('php://stdin', 'r');
 		$line = fgets($handle);
 		$line = trim($line, "\r\n");
-		if(is_numeric($line)){
-			if($line > 15) {
-				echo(colorize("This is more than myHermes allows! Please try again:", "FAILURE") . "  ");
+		if (is_numeric($line)){
+			if ($line > 15) {
+				echo colorize('This is more than myHermes allows! Please try again:', 'FAILURE') . '  ';
 				return getUserWeight();
 			}
-			if($line == 0) {
-				echo(colorize("There is no such thing is weightless. Sorry. Try again:", "FAILURE") . "  ");
+			if ($line == 0) {
+				echo colorize('There is no such thing is weightless. Sorry. Try again:', 'FAILURE') . '  ';
 				return getUserWeight();
 			}
-			if($line < 0) {
-				echo(colorize("Inverse weight is a fantasy. Stop it. Try again:", "FAILURE") . "  ");
+			if ($line < 0) {
+				echo colorize('Inverse weight is a fantasy. Stop it. Try again:', 'FAILURE') . '  ';
 				return getUserWeight();
 			}
 			return $line * 0.99;	// reduce slightly to drop below parcel cost threshold (10Kg = 9.9 Kg = 5-10Kg parcel)
-		}
-		else {
+		} else {
 			// if the user inputs an invalid weight, default and notify again at the end!
-			echo(colorize("Invalid weight, please try again:", "FAILURE") . "  ");
+			echo colorize('Invalid weight, please try again:', 'FAILURE') . '  ';
 			return getUserWeight();
 		}
 	}
@@ -359,14 +358,13 @@
 	 *  @return boolean yes/no answer
 	 */
 	function getUserYesNo() {
-		$handle = fopen ("php://stdin","r");
+		$handle = fopen ('php://stdin', 'r');
 		$line = fgets($handle);
 		$line = trim($line, "\r\n");
-		if($line == "y" || $line == "yes") {
+		if ($line == 'y' || $line == 'yes') {
 			return true;
-		}
-		else if ($line != "n" && $line != "no") {
-			echo(colorize("Invalid input, please try again (y/n):", "FAILURE") . "  ");
+		} elseif ($line != 'n' && $line != 'no') {
+			echo colorize('Invalid input, please try again (y/n):', 'FAILURE') . '  ';
 			return getUserYesNo();
 		}
 		return false;
@@ -379,7 +377,7 @@
 	  */
 	function complete() {
 		usleep(125000);
-		echo(colorize("Done!", "SUCCESS") . "\n");
+		echo colorize('Done!', 'SUCCESS') . PHP_EOL;
 	}
 
 
@@ -393,24 +391,22 @@
 	 *  @return colored text string
 	 */
 	function colorize($text, $status) {
-	$out = "";
-	switch($status) {
-		case "SUCCESS":
-			$out = "[42m"; //Green background
-			break;
-		case "FAILURE":
-			$out = "[41m"; //Red background
-			break;
-		case "WARNING":
-			$out = "[43m"; //Yellow background
-			break;
-		case "NOTE":
-			$out = "[44m"; //Blue background
-			break;
-		default:
-			throw new Exception("Invalid status: " . $status);
-	}
-	return chr(27) . "$out" . "$text" . chr(27) . "[0m";
-}
 
-?>
+		switch ($status) {
+			case 'SUCCESS':
+				$out = '[42m'; //Green background
+				break;
+			case 'FAILURE':
+				$out = '[41m'; //Red background
+				break;
+			case 'WARNING':
+				$out = '[43m'; //Yellow background
+				break;
+			case 'NOTE':
+				$out = '[44m'; //Blue background
+				break;
+			default:
+				throw new Exception('Invalid status: ' . $status);
+		}
+		return chr(27) . $out . $text . chr(27) . '[0m';
+	}
