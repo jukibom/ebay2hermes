@@ -204,8 +204,8 @@
 	  * @return completed myHermes array ready for outputting to CSV.
 	  */
 	function convertEbayToHermes($ebayArray, $contents, $specifyWeight) {
-		$ignoreList = array();
 
+		$hermesArray = array();
 		foreach($ebayArray as $key => $order) {
 
 			$hermesArray[$key] = $order;
@@ -220,7 +220,6 @@
 			} else {
 				$hermesArray[$key]['weight'] = 0.5;
 			}
-
 
 			complete();
 		}
