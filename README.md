@@ -1,7 +1,8 @@
 ebay2hermes
 ===========
 
-Simple php script to convert an eBay exported CSV to a myHermes compatible import CSV.
+Simple php script to convert an eBay exported CSV to a myHermes compatible import CSV. 
+BONUS: At the time of writing, myHermes has a really weird bug concerning importing 'ghost' sales from previous imports. I've told them months ago, they don't seem to care. This script fixes it.
 
 This script: 
   * Prompts the user to combine multiple orders into a single parcel
