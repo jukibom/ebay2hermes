@@ -461,13 +461,17 @@
 
 
 	/** Handy coloring helper function
-	 *  @param $text input text to be colored
-	 *  @param $status determines color:
+	 *
+	 * @throws Exception If an invalid status is passed in.
+	 *
+	 *  @param string $text input text to be colored
+	 *  @param string $status determines color:
 	 *		'SUCCESS' 	= green
 	 *		'FAILURE' 	= red
 	 *		'WARNING' 	= yellow
 	 *		'NOTE'		= blue
-	 *  @return colored text string
+	 *
+	 *  @return string colored text string
 	 */
 	function colorize($text, $status) {
 
