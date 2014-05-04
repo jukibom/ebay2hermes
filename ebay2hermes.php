@@ -229,11 +229,11 @@
 	function getDuplicates($currentOrder, $orders, $ignoreList, &$refs) {
 		$duplicates = array();
 		$references = array();
-		foreach($orders as $key => $order) {
-			if(array_search($currentOrder, $ignoreList)) {
+		foreach ($orders as $key => $order) {
+			if (array_search($currentOrder, $ignoreList)) {
 				continue;
 			}
-			if(array_search($currentOrder['firstnames'], $order) && array_search($currentOrder['lastname'], $order)) {
+			if (array_search($currentOrder['firstnames'], $order) && array_search($currentOrder['lastname'], $order)) {
 				// maintain consistent keys across arrays
 				$duplicates[$key] = $order;
 				array_push($references, $order['reference']);
@@ -341,9 +341,9 @@
 
 
 	/** Simple get true or false based on user input of "y/yes" or "n/no"
-     *  Basic error handling included
+	 *  Basic error handling included
 	 *  @return boolean yes/no answer
-     */
+	 */
 	function getUserYesNo() {
 		$handle = fopen ("php://stdin","r");
 		$line = fgets($handle);
@@ -360,7 +360,7 @@
 
 
 	/** Completion of a task with small usability pause
-      * Simply outputs "Done" in green text and waits 125 mSec
+	  * Simply outputs "Done" in green text and waits 125 mSec
 	  * (Prevents user from seeing an instant giant wall of text!)
 	  */
 	function complete() {
