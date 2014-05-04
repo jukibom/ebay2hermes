@@ -62,7 +62,7 @@
 
 			// multi-purchase order headers have no product ID associated with them
 			$multiPurchase = false;
-			if(empty($lineArray[11])) {
+			if (empty($lineArray[11])) {
 				$multiPurchase = true;
 			}
 
