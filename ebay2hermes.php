@@ -261,46 +261,99 @@
 	}
 
 	/** Exports a myHermes compatible CSV file.
-	  * @param $outputFile the filesystem location to output to
-	  * @param $hermesArray a converted array to output
+	  * @param string $outputFile the filesystem location to output to
+	  * @param string[] $hermesArray a converted array to output
 	  */
-	function outputHermes($outputFile, $hermesArray) {
-		// hermes csv header
-
+	function outputHermes($outputFile, array $hermesArray) {
 		echo 'Exporting header to ' . $outputFile . '...' . PHP_EOL;
-		$header = 'Address_line_1,Address_line_2,Address_line_3,Address_line_4,Postcode,First_name,Last_name,Email,Weight(Kg),Compensation(£),Signature(y/n),Reference,Contents,Parcel_value(£),Delivery_phone,Delivery_safe_place,Delivery_instructions' . PHP_EOL;
-		file_put_contents($outputFile, $header);
 
-		// records
+		// Set headers, used also in automagically processing heremes array
+		$headerList = array(
+			'address1'				=> 'Address_line_1',
+			'address2'				=> 'Address_line_2',
+			'address3'				=> 'Address_line_3',
+			'address4'				=> 'Address_line_4',
+			'postcode'				=> 'Postcode',
+			'firstnames'			=> 'First_name',
+			'lastname'				=> 'Last_name',
+			'email'					=> 'Email',
+			'weight'				=> 'Weight(Kg)',
+			'compensation'			=> 'Compensation(£)',
+			'signature'				=> 'Signature(y/n)',
+			'reference'				=> 'Reference',
+			'contacts'				=> 'Contents',
+			'value'					=> 'Parcel_value(£)',
+			'phone'					=> 'Delivery_phone',
+			'safe_place'			=> 'Delivery_safe_place',
+			'delivery_instructions'	=> 'Delivery_instructions'
+		);
+
+		$file = new \SplFileObject($outputFile, 'w');
+
+		$file->fwrite(encodeCsvLine($headerList));
+
 		$recordNum = 0;
 		foreach ($hermesArray as $record) {
-			$recordNum ++;
-			echo "Exporting record " . $recordNum . ": " . $record['firstnames'] . " " . $record['lastname'] . "... ";
-			$line  = "\"" . $record['address1'] . "\",";
-			$line .= "\"" . $record['address2'] . "\",";
-			$line .= "\"" . $record['address3'] . "\",";
-			$line .= "\"" . $record['address4'] . "\",";
-			$line .= "\"" . $record['postcode'] . "\",";
-			$line .= "\"" . $record['firstnames'] . "\",";
-			$line .= "\"" . $record['lastname'] . "\",";
-			$line .= "\"" . $record['email'] . "\",";
-			$line .= "\"" . $record['weight'] . "\",";
-			$line .= "\"\",";		// compensation
-			$line .= "\"\",";		// signature
-			$line .= "\"" . $record['reference'] . "\",";
-			$line .= "\"" . $record['contents'] . "\",";
-			$line .= "\"" . $record['value'] . "\",";
-			$line .= "\"" . $record['phone'] . "\",";
-			$line .= "\"\",";		// safe place
-			$line .= "\"\"\n";		// delivery instructions
+			$recordNum++;
+			echo 'Exporting record ' . $recordNum . ': ' . $record['firstnames'] . ' ' . $record['lastname'] . '...';
 
-			file_put_contents($outputFile, $line, FILE_APPEND);
+			$csvLine = mungeCSVFormat($headerList, $record);
+
+			$file->fwrite(
+				encodeCsvLine($csvLine)
+			);
+
 			complete();
 		}
+
+		$file->fflush();
 
 		usleep(500000);
 		echo PHP_EOL . 'Exported ' . $recordNum . ' records to ' . $outputFile . '...' . PHP_EOL . PHP_EOL;
 		usleep(250000);
+	}
+
+
+	/**
+	 * Performs the dirty job of munging the internal representation of data to one ready for serialization to
+	 * myHermes CSV.
+	 *
+	 * Pivot representation of the data on the array keys from the myHermes header, defaulting to an empty string if
+	 * omitted.
+	 *
+	 * @param string[] $headerList
+	 * @param string[] $record
+	 *
+	 * @return string[]
+	 */
+	function mungeCSVFormat(array $headerList, array $record)
+	{
+		$csvLine = array();
+		foreach (array_keys($headerList) as $key) {
+			$csvLine[$key] = '';
+			if (array_key_exists($key, $record)) {
+				$csvLine[$key] = $record[$key];
+			}
+		}
+		return $csvLine;
+	}
+
+
+	/**
+	 * Encode a CSV line, forcing all values to be quoted.
+	 *
+	 * @param array $csvLine
+	 * @return string
+	 */
+	function encodeCsvLine(array $csvLine)
+	{
+		$quote = function($value) {
+			return '"' . str_replace('"', '""', $value) . '"';
+		};
+
+		return implode(
+			',', array_map($quote, $csvLine)
+		) . PHP_EOL;
 	}
 
 
