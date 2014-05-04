@@ -58,15 +58,32 @@
 
 
 		$CSVArray = Array();
+		$lineNo = 0;
+		$skippedCount = 0;
+		$skippedList = array();
 		while (!$file->eof()) {
+			$lineNo++;
 			$lineArray = $file->fgetcsv();
 
-			$orderNo = $lineArray[0];
-
-			// TODO: Correctly handle odd trailing line - look at flags :/
-			if (!strlen($orderNo)) {
+			// Silently skip the header line
+			if (1 == $lineNo) {
 				continue;
 			}
+
+			// Silently skip entirely empty lines
+			if (0 == count($lineArray)) {
+				continue;
+			}
+
+			// Skip invalid lines (trailing poop at end of csv)
+			// Note: this will break if ebay begins emitting a different csv with fewer than 37 rows
+			if (count($lineArray) < 37) {
+				$skippedCount++;
+				$skippedList[] = $lineArray;
+				continue;
+			}
+
+			$orderNo = $lineArray[0];
 
 			if (!array_key_exists($orderNo, $CSVArray)) {
 				$CSVArray[$orderNo] = array();
@@ -80,22 +97,30 @@
 				$multiPurchase = true;
 			}
 
+			$lineArray = array_map('trim', $lineArray);
+
+			try {
+				$value = normalizeValue($lineArray[15]);
+			} catch (Exception $e) {
+				echo 'Unable to parse price for order #' . $lineArray[0] . PHP_EOL;
+			}
+
 			$CSVArray[$orderNo][] = array(
 				'multiPurchaseHeader' => $multiPurchase,
 
 				// customer name (split into [all first names] [last name])
-				'lastname' => array_pop($name),
-				'firstnames' => implode(' ', $name),
+				'lastname' => normalizeCSVValue(array_pop($name)),
+				'firstnames' => normalizeCSVValue(implode(' ', $name)),
 
 				// customer address
-				'address1' => $lineArray[5],
-				'address2' => $lineArray[6],
-				'address3' => $lineArray[7],
-				'address4' => $lineArray[8],
-				'postcode' => $lineArray[9],
+				'address1' => normalizeCSVValue($lineArray[5]),
+				'address2' => normalizeCSVValue($lineArray[6]),
+				'address3' => normalizeCSVValue($lineArray[7]),
+				'address4' => normalizeCSVValue($lineArray[8]),
+				'postcode' => strtoupper(str_replace('-', ' ', $lineArray[9])),	// Replace hypens in postcodes (silly customers!)
 
 				// customer email
-				'email' => $lineArray[4],
+				'email' => strtolower($lineArray[4]),
 
 				// customer phone number
 				'phone' => $lineArray[3],
@@ -104,12 +129,53 @@
 				'reference' => $lineArray[0],
 
 				// product cost
-				'value' => $lineArray[15]
+				'value' => $value
 			);
+		}
+
+		if ($skippedCount == $lineNo) {
+			echo '0 lines could be processed, perhaps the CSV format has changed?' . PHP_EOL;
+			die();
+		}
+
+		if ($skippedCount > 2) {
+			echo 'More than two lines have been skipped, this should never happen. Perhaps the CSV format has changed' . PHP_EOL;
+			print_r($skippedList);
+			die();
 		}
 
 		return $CSVArray;
 	}
+
+
+	function normalizeCSVValue($value)
+	{
+		return ucwords(strtolower($value));
+	}
+
+
+	function normalizeValue($value)
+	{
+		$matches = array();
+
+		$regex = "
+		/
+			(?:			# decimalised subpattern
+				\d*		# 0 or more digits
+				\.		# decimal point
+				\d*		# 0 or more digits
+			)
+			|
+			\d+			# single digit pattern
+		/x";
+
+		if (!preg_match($regex, $value, $matches)) {
+			throw new Exception('Could not parse value');
+		}
+
+		return $matches[0];
+	}
+
 
 	/**
 	 * Copies customer details from multi-order headers into the individual orders
@@ -227,6 +293,8 @@
 	 */
 	function convertEbayToHermes($ebayArray, $contents, $specifyWeight) {
 
+		$defaultWeight = 0.5;
+
 		$hermesArray = array();
 		foreach($ebayArray as $key => $order) {
 
@@ -237,10 +305,11 @@
 
 			// weight (user-specified or default to 0.5)
 			if ($specifyWeight) {
-				echo PHP_EOL . 'Please enter weight (Kg) for eBay order ' . $order['reference'] . ' (' . $order['firstnames'] . ' ' . $order['lastname'] . '):  ';
+				echo 'Please enter weight (Kg) for eBay order ' . $order['reference'] . ' (' . $order['firstnames'] . ' ' . $order['lastname'] . '):  ';
 				$hermesArray[$key]['weight'] = getUserWeight();
 			} else {
-				$hermesArray[$key]['weight'] = 0.5;
+				echo 'Default to ' . $defaultWeight . 'Kg (' . $order['firstnames'] . ' ' . $order['lastname'] . '):  ';
+				$hermesArray[$key]['weight'] = $defaultWeight;
 			}
 
 			complete();
@@ -375,7 +444,7 @@
 	function encodeCsvLine(array $csvLine)
 	{
 		$quote = function($value) {
-			return '"' . str_replace('"', '""', $value) . '"';
+			return '"' . str_replace('"', '""', trim($value)) . '"';
 		};
 
 		return implode(
@@ -393,7 +462,7 @@
 	 * @return boolean yes/no response
 	 */
 	function getUserWeightPref() {
-		echo PHP_EOL . 'Weights of each order default to <1Kg.' . PHP_EOL . 'Would you prefer to specify weights for each order? (y/n)' . PHP_EOL;
+		echo PHP_EOL . 'Weights of each order default to <1Kg.' . PHP_EOL . 'Would you prefer to specify weights for each order (Kg)? (y/n)' . PHP_EOL;
 
 		if (promptUserConfirmation()) {
 			echo PHP_EOL . colorize('Please keep in mind that weights will be reduced slightly to drop below cost threshold.', 'NOTE') . PHP_EOL . PHP_EOL;
