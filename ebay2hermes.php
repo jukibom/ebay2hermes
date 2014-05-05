@@ -77,8 +77,9 @@
 				continue;
 			}
 
+			// use the ebay Order number as our key
+			// multi-orders will have the same key and contain nSales + Header
 			$orderNo = $lineArray[0];
-
 			if (!array_key_exists($orderNo, $CSVArray)) {
 				$CSVArray[$orderNo] = array();
 			}
@@ -125,8 +126,8 @@
 				// customer phone number
 				'phone' => $lineArray[3],
 
-				// reference - use order number (product name surprisingly useless with print character limit)
-				'reference' => $lineArray[0],
+				// printed reference - use order number (product name surprisingly useless with print character limit)
+				'reference' => $orderNo,
 
 				// product cost
 				'value' => $value
@@ -134,12 +135,12 @@
 		}
 
 		if ($skippedCount == $lineNo) {
-			echo '0 lines could be processed, perhaps the CSV format has changed?' . PHP_EOL;
+			echo colorize('0 lines could be processed, perhaps the CSV format has changed?' . PHP_EOL, 'FAILURE');
 			die();
 		}
 
 		if ($skippedCount > 2) {
-			echo 'More than two lines have been skipped, this should never happen. Perhaps the CSV format has changed' . PHP_EOL;
+			echo colorize('More than two lines have been skipped, this should never happen. Perhaps the CSV format has changed' . PHP_EOL, 'FAILURE');
 			print_r($skippedList);
 			die();
 		}
@@ -156,6 +157,14 @@
 	 * (Header)		id		username	name	phone	email	addr1	addr2	addr3	addr4	postcode	country		empty		empty
 	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
+	 *
+	 * Multiorder header and sales have the same id in an exported CSV but an entirely different 
+	 * structure on the sales page or manifest.
+	 *		(Header) 	id 20
+	 *		(Sale)		id 17
+	 *		(Sale)		id 18
+	 *		(Sale)		id 19
+	 * The id behaviour is restored for export.
 	 *
 	 * @param array $CSVArray ebay formatted array
 	 *
