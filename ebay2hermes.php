@@ -12,8 +12,9 @@
 
 	// Configuration options
 	$defaultCategory = 'Home & Garden';		// Seems to cover 90% of items for now
-	$defaultWeight	= 0.5;					// User may override this
-	$uxWait	= 125000;						// Number of microsecond to delay processing by (oddly more user-friendly)
+	$defaultWeight	= 0.5;				// User may override this
+	$uxWait	= 125000;				// Number of microsecond to delay processing by (oddly more user-friendly)
+	date_default_timezone_set ( 'Europe/London' );
 
 	$inputFile = $params['f'];
 	$outputFile = 'hermes_' . date('y_m_d') . '.csv';
