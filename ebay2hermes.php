@@ -1,6 +1,6 @@
 <?php
 
-
+	// Get parameter list
 	$params = getopt('f:');
 
 	if (!count($params)) {
@@ -11,10 +11,9 @@
 
 
 	// Configuration options
-	$defaultCategory = 'Home & Garden';
-	$defaultWeight	= 0.5;
-	$uxWait	= 125000;			// Number of microsecond to delay processing by (oddly more user-friendly)
-
+	$defaultCategory = 'Home & Garden';		// Seems to cover 90% of items for now
+	$defaultWeight	= 0.5;					// User may override this
+	$uxWait	= 125000;						// Number of microsecond to delay processing by (oddly more user-friendly)
 
 	$inputFile = $params['f'];
 	$outputFile = 'hermes_' . date('y_m_d') . '.csv';
@@ -41,6 +40,7 @@
 	 */
 	function loadEbayCSV($filePath) {
 
+		// open file for reading without empty lines
 		try {
 			$file = new \SplFileObject($filePath, 'r');
 		} catch(\RuntimeException $e) {
@@ -70,6 +70,7 @@
 
 			// Skip invalid lines (trailing poop at end of csv)
 			// Note: this will break if ebay begins emitting a different csv with fewer than 37 rows
+			// But at least it will warn us this way!
 			if (count($lineArray) < 37) {
 				$skippedCount++;
 				$skippedList[] = $lineArray;
@@ -82,35 +83,41 @@
 				$CSVArray[$orderNo] = array();
 			}
 
-			$name = explode(' ', $lineArray[2]);
-
 			// multi-purchase order headers have no product ID associated with them
 			$multiPurchase = false;
 			if (empty($lineArray[11])) {
 				$multiPurchase = true;
 			}
 
+			// cut out any extra white space
 			$lineArray = array_map('trim', $lineArray);
 
+			// remove £ symbols
 			try {
 				$value = normalizeValue($lineArray[15]);
 			} catch (Exception $e) {
 				echo 'Unable to parse price for order #' . $lineArray[0] . PHP_EOL;
 			}
+			
+			// name split into [all first names] [last name]
+			$name = explode(' ', $lineArray[2]);
+			$lastname 	= array_pop($name);
+			$firstnames = implode(' ', $name);
 
+			// store line details in new array
 			$CSVArray[$orderNo][] = array(
 				'multiPurchaseHeader' => $multiPurchase,
 
-				// customer name (split into [all first names] [last name])
-				'lastname' => normalizeCSVValue(array_pop($name)),
-				'firstnames' => normalizeCSVValue(implode(' ', $name)),
+				// customer name 
+				'lastname' => normalizeCSVString($lastname),
+				'firstnames' => normalizeCSVString($firstnames),
 
 				// customer address
-				'address1' => normalizeCSVValue($lineArray[5]),
-				'address2' => normalizeCSVValue($lineArray[6]),
-				'address3' => normalizeCSVValue($lineArray[7]),
-				'address4' => normalizeCSVValue($lineArray[8]),
-				'postcode' => strtoupper(str_replace('-', ' ', $lineArray[9])),	// Replace hypens in postcodes (silly customers!)
+				'address1' => normalizeCSVString($lineArray[5]),
+				'address2' => normalizeCSVString($lineArray[6]),
+				'address3' => normalizeCSVString($lineArray[7]),
+				'address4' => normalizeCSVString($lineArray[8]),
+				'postcode' => strtoupper(str_replace('-', ' ', $lineArray[9])),	// Remove any hypens in postcodes (silly customers!)
 
 				// customer email
 				'email' => strtolower($lineArray[4]),
@@ -141,41 +148,12 @@
 	}
 
 
-	function normalizeCSVValue($value)
-	{
-		return ucwords(strtolower($value));
-	}
-
-
-	function normalizeValue($value)
-	{
-		$matches = array();
-
-		$regex = "
-		/
-			(?:			# decimalised subpattern
-				\d*		# 0 or more digits
-				\.		# decimal point
-				\d*		# 0 or more digits
-			)
-			|
-			\d+			# single digit pattern
-		/x";
-
-		if (!preg_match($regex, $value, $matches)) {
-			throw new Exception('Could not parse value');
-		}
-
-		return $matches[0];
-	}
-
-
 	/**
 	 * Copies customer details from multi-order headers into the individual orders
 	 * and removes the header from the array. This is so multi-orders can be packaged
 	 * in separate parcels if required and will be treated like any other.
 	 * format:
-	 * (Header)	id		username	name	phone	email	addr1	addr2	addr3	addr4	postcode	country		empty		empty
+	 * (Header)		id		username	name	phone	email	addr1	addr2	addr3	addr4	postcode	country		empty		empty
 	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 * (order)		id		username	empty	empty	empty	empty	empty	empty	empty	empty		empty		auctionId	product
 	 *
@@ -401,6 +379,44 @@
 		usleep($uxWait);
 	}
 
+	/**
+	 * Converts text string to Upper case starting letters.
+	 * Useful for normalizing customer details to be printed. Good readability!
+	 * @param string $value
+	 * @return string
+	 */
+	function normalizeCSVString($value)
+	{
+		return ucwords(strtolower($value));
+	}
+
+	/**
+	 * Strips the £ symbol from a value. Matches x.xx, .xx, x., x.x etc. 
+	 * @param string $value
+	 * @return string
+	 */
+	function normalizeValue($value)
+	{
+		$matches = array();
+
+		$regex = "
+		/
+			(?:			# decimalised subpattern
+				\d*		# 0 or more digits
+				\.		# decimal point
+				\d*		# 0 or more digits
+			)
+			|
+			\d+			# single digit pattern
+		/x";
+
+		if (!preg_match($regex, $value, $matches)) {
+			throw new Exception('Could not parse value');
+		}
+
+		return $matches[0];
+	}
+
 
 	/**
 	 * Performs the dirty job of munging the internal representation of data to one ready for serialization to
@@ -576,6 +592,11 @@
 	 * @return string colored text string
 	 */
 	function colorize($text, $status) {
+		
+		// colors do nothing on windows, return blank string
+		if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+			return $text;
+		}
 
 		switch ($status) {
 			case 'SUCCESS':
