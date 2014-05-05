@@ -546,7 +546,6 @@
 
 	/**
 	 * Simple get true or false based on user input of "y/yes" or "n/no"
-	 *
 	 * Basic error handling included
 	 *
 	 * @return boolean True if the user said yes, false if no.
@@ -583,7 +582,7 @@
 
 	/**
 	 * Completion of a task with small usability pause
-	 * Simply outputs "Done" in green text and waits 125 mSec
+	 * Simply outputs "Done" in green text and waits $uxWait microSec
 	 * (Prevents user from seeing an instant giant wall of text!)
 	 */
 	function complete() {
