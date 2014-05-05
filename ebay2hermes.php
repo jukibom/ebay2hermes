@@ -222,10 +222,10 @@
 	 * @return array ebayArray with any duplicates removed
 	 */
 	function promptForDuplicates($ebayArray) {
-
-		$cleanEbayArray				= array();
-		$aggregateDuplicateArray	= array();
-		$previouslyProcessedArray	= array();
+		
+		$cleanEbayArray				= array();		// copy each wanted sale into a fresh array
+		$aggregateDuplicateArray	= array();		// never match an uncombined order again
+		$previouslyProcessedArray	= array();		// never match a combined order again
 		foreach ($ebayArray as $key => $order) {
 
 			// Skip previously processed order
@@ -298,41 +298,6 @@
 	}
 
 	/**
-	 * Returns an array of all duplicate orders with the keys identical to the original array.
-	 *
-	 * @param array $currentOrder the order array to look up
-	 * @param array $orderList the full ebayArray with no multi-headers
-	 * @param array $ignoreList an array of orders to skip (if a user already said not to combine)
-	 *
-	 * @return array of duplicate orders
-	 */
-	function getDuplicates($currentOrder, $orderList, $ignoreList) {
-		$duplicates = array();
-		$references = array();
-		foreach ($orderList as $key => $order) {
-
-			// Skip ignores
-			if (false !== array_search($currentOrder, $ignoreList)) {
-				continue;
-			}
-
-			if ($currentOrder['firstnames'] == $order['firstnames'] && $currentOrder['lastname'] == $order['lastname']) {
-				// maintain consistent keys across arrays
-				$duplicates[$key]	= $order;
-				$references[]		= $order['reference'];
-			}
-		}
-		$refs = implode(', ', $references);
-
-		// if only one match, clear array (but we want to include the original if there is!)
-		if (count($duplicates) == 1) {
-			$duplicates = array();
-		}
-
-		return array($duplicates, $refs);
-	}
-
-	/**
 	 * Exports a myHermes compatible CSV file.
 	 *
 	 * @param string $outputFile the filesystem location to output to
@@ -342,7 +307,8 @@
 	function outputHermes($outputFile, array $hermesArray, $uxWait) {
 		echo 'Exporting header to ' . $outputFile . '...' . PHP_EOL;
 
-		// Set headers, used also in automagically processing heremes array
+		// Set headers, used also in automagically processing heremes array.
+		// Keys are identical to hermesArray key structure.
 		$headerList = array(
 			'address1'				=> 'Address_line_1',
 			'address2'				=> 'Address_line_2',
@@ -387,6 +353,49 @@
 		echo PHP_EOL . 'Exported ' . $recordNum . ' records to ' . $outputFile . '...' . PHP_EOL . PHP_EOL;
 		usleep($uxWait);
 	}
+
+	
+	/**
+	 * Returns an array of all duplicate orders with the keys identical to the original array.
+	 *
+	 * @param array $currentOrder the order array to look up
+	 * @param array $orderList the full ebayArray with no multi-headers
+	 * @param array $ignoreList an array of orders to skip (if a user already said not to combine)
+	 *
+	 * @return array [array of duplicate orders][string formatted matched references]
+	 */
+	function getDuplicates($currentOrder, $orderList, $ignoreList) {
+		$duplicates = array();
+		$references = array();
+		foreach ($orderList as $key => $order) {
+
+			// Skip ignores
+			if (false !== array_search($currentOrder, $ignoreList)) {
+				continue;
+			}
+
+			if ($currentOrder['firstnames'] == $order['firstnames'] && $currentOrder['lastname'] == $order['lastname']) {
+				// maintain consistent keys across arrays
+				$duplicates[$key]	= $order;
+				$references[]		= $order['reference'];
+			}
+		}
+		$refs = implode(', ', $references);
+
+		// if only one match, clear array (but we want to include the original if there is!)
+		if (count($duplicates) == 1) {
+			$duplicates = array();
+		}
+
+		return array($duplicates, $refs);
+	}
+
+
+
+	
+
+	/** HELPER FUNCTIONS **/
+
 
 	/**
 	 * Converts text string to Upper case starting letters.
@@ -470,9 +479,6 @@
 		) . PHP_EOL;
 	}
 
-
-
-	/** HELPER FUNCTIONS **/
 
 	/**
 	 * Asks the user whether or not they wish to manually specify weights with parcels
