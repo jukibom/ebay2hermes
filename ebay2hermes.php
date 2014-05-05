@@ -36,7 +36,7 @@
 	 *
 	 * @param string $filePath filesystem location of CSV file to load
 	 *
-	 * @return array Multidimensional, incrementing array of orders
+	 * @return array Multidimensional array of orders with ebay sales ID as the key.
 	 */
 	function loadEbayCSV($filePath) {
 
@@ -401,6 +401,7 @@
 	 * Converts text string to Upper case starting letters.
 	 * Useful for normalizing customer details to be printed. Good readability!
 	 * @param string $value
+	 *
 	 * @return string
 	 */
 	function normalizeCSVString($value)
@@ -411,6 +412,7 @@
 	/**
 	 * Strips the £ symbol from a value. Matches x.xx, .xx, x., x.x etc. 
 	 * @param string $value
+	 *
 	 * @return string
 	 */
 	function normalizeValue($value)
@@ -499,9 +501,7 @@
 
 	/**
 	 * Get user input for weight of an order
-	 *
-	 * Reduces the weight by 0.01% in order to drop below threshold for parcel weights
-	 *
+	 * Reduces the weight by 0.01% in order to drop integer values below threshold for parcel weights
 	 * Maximum weight input of 15Kg
 	 *
 	 * @return float weight value
@@ -534,7 +534,8 @@
 					break;
 
 				default:
-					$weight = $line * 0.99;	// By default reduce slightly to drop below parcel cost threshold (10Kg = 9.9 Kg = 5-10Kg parcel)
+					// Reduce slightly to drop below parcel weight threshold (10Kg = 9.9 Kg = 5-10Kg parcel)
+					$weight = $line * 0.99;	
 					break;
 			}
 		}
